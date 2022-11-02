@@ -1,0 +1,1 @@
+srun -t 30 --gres=gpu:1 python cnn_classification_cifar10.py
