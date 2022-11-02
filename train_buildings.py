@@ -5,7 +5,7 @@ from torch.utils.data import Subset
 import torchvision
 from model import CNN
 
-from dataset import BuildingDataset
+from dataset_new import BuildingDataset
 
 import numpy as np
 
@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 import os, sys
 from tqdm import tqdm # DELETE AFTERWARD
+
 
 IMAGE_HEIGHT = 3024
 IMAGE_WIDTH = 4032
@@ -23,7 +24,7 @@ def split_train_val(org_train_set, valid_ratio=0.1):
 
     num_train = len(org_train_set)
 
-    split = int(np.floor(valid_ratio * num_train))        
+    split = int(np.floor(valid_ratio * num_train))
 
     indices = list(range(num_train))
 
@@ -42,31 +43,28 @@ def split_train_val(org_train_set, valid_ratio=0.1):
 def test(net, loader, device):
     # prepare model for testing (only important for dropout, batch norm, etc.)
     net.eval()
-    
+
     test_loss = 0
     correct = 0
     total = 0
 
     with torch.no_grad():
         print('TESTING...')
-        for idx, data, target in tqdm(enumerate(loader)):
-            print('hihi')
-            if idx % 1 == 0:
-                print(idx, flush=True)
+        for idx, (data, target) in tqdm(enumerate(loader)):
 
             data, target = data.to(device), target.to(device)
-            
+
             output = net(data)
-            test_loss += F.nll_loss(output, target, size_average=False).item()
+            test_loss += F.nll_loss(output, target, reduction = 'sum').item()
             pred = output.data.max(1, keepdim=True)[1]
             correct += (pred.eq(target.data.view_as(pred)).sum().item())
-            
+
             total = total + 1
 
     print('Test set: Avg. loss: {:.4f}, Accuracy: {}/{} ({:.2f}%)'.format(
         test_loss, correct, len(loader.dataset),
         (100. * correct / len(loader.dataset))), flush=True)
-    
+
     return 100.0 * correct / len(loader.dataset)
 
 def train(net, loader, optimizer, epoch, device, log_interval=1):
@@ -74,10 +72,10 @@ def train(net, loader, optimizer, epoch, device, log_interval=1):
     net.train()
 
     correct = 0
-    for batch_idx, (data, target) in enumerate(loader):
+    for batch_idx, (data, target) in tqdm(enumerate(loader)):
 
         data, target = data.to(device), target.to(device)
-        
+
         # clear up gradients for backprop
         optimizer.zero_grad()
         output = F.log_softmax(net(data), dim=1)
@@ -102,21 +100,26 @@ def train(net, loader, optimizer, epoch, device, log_interval=1):
 if __name__ == '__main__':
 
     # image parameters
-    resize_factor = 0.1
+    resize_factor = 10
     new_h = int(IMAGE_HEIGHT / resize_factor)
     new_w = int(IMAGE_WIDTH / resize_factor)
 
     normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.225, 0.225, 0.225])
     resize = torchvision.transforms.Resize(size = (new_h, new_w))
     convert = torchvision.transforms.ConvertImageDtype(torch.float)
-    
-    train_transforms = torchvision.transforms.Compose([resize, convert, normalize])
-    test_transforms = torchvision.transforms.Compose([resize, convert, normalize])    
+    hflip = torchvision.transforms.RandomHorizontalFlip(p = 0.5)
 
-    train_dataset = BuildingDataset('train_labels.csv', '/gpfs/u/home/MLA1/MLA1vnvr/scratch-shared/all_images', transform=train_transforms)
-    test_dataset = BuildingDataset('test_labels.csv', '/gpfs/u/home/MLA1/MLA1vnvr/scratch-shared/all_images', transform=test_transforms)
-    
-    
+    train_transforms = torchvision.transforms.Compose([resize, convert, normalize])
+    test_transforms = torchvision.transforms.Compose([resize, convert, normalize])
+    train_aug = torchvision.transforms.Compose([hflip])
+
+    # read and pre-process image data
+    print('Loading Training Data...')
+    train_dataset = BuildingDataset('train_labels.csv', '/gpfs/u/home/MLA1/MLA1vnvr/scratch-shared/all_images', load_from = '/gpfs/u/home/MLA1/MLA1wngk/scratch/train.pkl', transform_pre=train_transforms, transform_aug = train_aug)
+    print('Loading Testing Data...')
+    test_dataset = BuildingDataset('test_labels.csv', '/gpfs/u/home/MLA1/MLA1vnvr/scratch-shared/all_images', load_from = '/gpfs/u/home/MLA1/MLA1wngk/scratch/test.pkl', transform_pre=test_transforms)
+
+
     # Plotting
     # image = train_dataset[10][0]
     # image = image.permute(1,2,0)
@@ -125,11 +128,11 @@ if __name__ == '__main__':
     # plt.imshow(image)
     # #plt.imshow(torch.reshape(image, (new_h, new_w)), cmap='gray_r')
     # plt.show()
-    
+
     # set training hyperparameters
-    train_batch_size = 100
-    test_batch_size = 100
-    n_epochs = 10
+    train_batch_size = 64
+    test_batch_size = 64
+    n_epochs = 20
     learning_rate = 1e-3
     seed = 100
     input_dim = (3, new_h, new_w)
@@ -144,6 +147,9 @@ if __name__ == '__main__':
     network = network.to(device)
 
     optimizer = optim.SGD(network.parameters(), lr=learning_rate, momentum=momentum)
+    # scheduler
+    sch = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones = [10,20], gamma = 0.1)
+
 
     model_path = 'models/'
     if not os.path.exists(model_path):
@@ -161,6 +167,7 @@ if __name__ == '__main__':
     # training loop
     for epoch in range(1, n_epochs + 1):
         train(network, train_loader, optimizer, epoch, device)
+        sch.step()
         test(network, test_loader, device)
 
     torch.save(network.state_dict(), PATH)
