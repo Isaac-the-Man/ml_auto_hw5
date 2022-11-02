@@ -1,0 +1,1 @@
+srun -t 60 --gres=gpu:1 python train_buildings.py

@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import os, sys
+from tqdm import tqdm # DELETE AFTERWARD
 
 IMAGE_HEIGHT = 3024
 IMAGE_WIDTH = 4032
@@ -47,7 +48,11 @@ def test(net, loader, device):
     total = 0
 
     with torch.no_grad():
-        for data, target in loader:
+        print('TESTING...')
+        for idx, data, target in tqdm(enumerate(loader)):
+            print('hihi')
+            if idx % 1 == 0:
+                print(idx, flush=True)
 
             data, target = data.to(device), target.to(device)
             
@@ -97,7 +102,7 @@ def train(net, loader, optimizer, epoch, device, log_interval=1):
 if __name__ == '__main__':
 
     # image parameters
-    resize_factor = 1
+    resize_factor = 0.1
     new_h = int(IMAGE_HEIGHT / resize_factor)
     new_w = int(IMAGE_WIDTH / resize_factor)
 

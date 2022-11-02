@@ -39,11 +39,44 @@ class CNN(nn.Module):
     def __init__(self, in_dim, out_dim):
         super().__init__()
 
-        self.in_dim = in_dim
+        self.in_dim = in_dim # (3, 302, 403)
         self.out_dim = out_dim
 
+        # AlexNet
+        self.conv1 = nn.Conv2d(3, 96, (11, 11), stride = 4, padding = 0)
+        self.pool1 = nn.MaxPool2d((3, 3), stride = 2)
+        self.conv2 = nn.Conv2d(96, 256, (5, 5), stride = 1, padding = 2)
+        self.pool2 = nn.MaxPool2d((3, 3), stride = 2)
+        self.conv3 = nn.Conv2d(256, 384, (3, 3), stride = 1, padding = 1)
+        self.conv4 = nn.Conv2d(384, 256, (3, 3), stride = 1, padding = 1)
+        self.pool3 = nn.MaxPool2d((3, 3), stride = 2)
+
+        self.drop = nn.Dropout(p = 0.5)
+
+        self.flatten = nn.Flatten()
+
+        # linear layers
+        self.lin = FC(1024, self.out_dim, 1, 256)
+
     def forward(self, x):
-        pass
+        # CNNs
+        x = F.relu(self.conv1(x))
+        x = self.pool1(x)
+        x = F.relu(self.conv2(x))
+        x = self.pool2(x)
+        x = F.relu(self.conv3(x))
+        x = F.relu(self.conv4(x))
+        x = self.pool3(x)
+        print(x.shape)
+        x = self.flatten(x)
+        x = self.drop(x)
+
+        print(x.shape)
+
+        # dense layers
+        x = self.lin(x)
+
+        return x
 
 class CNN_small(nn.Module):
     
