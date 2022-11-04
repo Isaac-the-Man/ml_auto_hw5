@@ -133,4 +133,12 @@ Total & & & 10,854,539
 
 \section{CIFAR10 Accuracy Improvements}
 A variety of techniques were used to improve the CIFAR10 accuracy.  First, more convolutional neural network layers were added, and batch norms were applied throughout to help stablize the model and improve accuracy.  Additionally, dropout layers were added to help mitigate the effects of overfitting to the training dataset.  Data augmentation was also used - in this case, random horizontal flip was utilized to augment the dataset.
+
+\section{A Note on Testing Script}
+When testing this script, we ran into some issues with the cluster - namely a permissions issue with execve().  We were not able to resolve it in time for submission, and as such, this script is largely untested.  It should work, but if there are any issues, this is likely why.
+
+Instructions for tester.py:
+Set file directories on lines 15 and 16 for the images and the labels - sample paths are preset.
+> py tester.py
+expected output: test accuracy
 \end{document}
