@@ -1,6 +1,6 @@
 # SET TEST DIRECTORY HERE
-images_path = 'images_path'
-labels_path = 'labels_path'
+images_path = '/gpfs/u/home/MLA1/MLA1vnvr/scratch-shared/all_images'
+labels_path = '/gpfs/u/home/MLA1/MLA1vnvr/barn'
 
 
 
@@ -65,7 +65,7 @@ def main():
 	test_transforms = torchvision.transforms.Compose([resize, convert, normalize])
 
 	# create dataset
-	test_dataset = BuildingDataset(f'{labels_path}/test_labels.csv', images_path, transform_pre=test_transforms)
+	test_dataset = BuildingDataset(f'{labels_path}/test_labels.csv', images_path, save = False, transform_pre=test_transforms)
 
 	# hyperparams
 	train_batch_size = 64
