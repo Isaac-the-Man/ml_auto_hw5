@@ -1,11 +1,19 @@
+'''
+When testing this script, we ran into some issues with the cluster - namely a permissions issue with execve()
+We were not able to resolve it in time for submission, and as such, this file is largely untested.
+
+It should work, but if there are any issues, this is likely why
+
+
+Instructions:
+Set file directories below (lines 15, 16) for the images and the labels - sample paths are preset
+> py tester.py
+expected output: test accuracy
+'''
+
 # SET TEST DIRECTORY HERE
 images_path = '/gpfs/u/home/MLA1/MLA1vnvr/scratch-shared/all_images'
 labels_path = '/gpfs/u/home/MLA1/MLA1vnvr/barn'
-
-
-
-
-
 
 
 import torch
